@@ -94,6 +94,11 @@ angular.module('sidemenu.controllers', [])
 
     promise.then(function(data){
       $scope.stockPriceData = data;
+    
+      if(data.chg_percent >= 0 && data !== null)
+        $scope.reactiveColor = { 'background-color': '#33cd5f' };
+      else if(data.chg_percent < 0 && data !== null)
+        $scope.reactiveColor = { 'background-color': '#ef473a' };
     });
   }
 
@@ -177,7 +182,10 @@ angular.module('sidemenu.controllers', [])
     y2AxisTickFormat: y2TickFormat,
     y3AxisTickFormat: y3TickFormat,
     y4AxisTickFormat: y4TickFormat,
-    transitionDuration: 500
+    transitionDuration: 500,
+    y1AxisLabel: "Price",
+    y3AxisLabel: "Volume",
+    noData: "Loading Data..."
   };
   
 }]);
