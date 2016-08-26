@@ -9,6 +9,7 @@ angular.module('sidemenu', [
   'angular-cache',
   'nvd3',
   'nvChart',
+  'cb.x2js',
   'sidemenu.controllers',
   'sidemenu.services',
   'sidemenu.filters',

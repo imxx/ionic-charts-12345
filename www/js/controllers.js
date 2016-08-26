@@ -68,6 +68,7 @@ angular.module('sidemenu.controllers', [])
   "stockDataService",
   "chartDataService",
   "dateService",
+  "newsService",
   "notesService",
   function($scope,
     $window,
@@ -76,6 +77,7 @@ angular.module('sidemenu.controllers', [])
     stockDataService,
     chartDataService,
     dateService,
+    newsService,
     notesService) {
 
   $scope.ticker = $stateParams.stockTicker;
@@ -84,6 +86,7 @@ angular.module('sidemenu.controllers', [])
   $scope.todayDate = dateService.currentDate();
 
   $scope.stockNotes = [];
+  $scope.newsStories = [];
 
   $scope.chartViewFunc = function(n){
     $scope.chartView = n;
@@ -93,8 +96,13 @@ angular.module('sidemenu.controllers', [])
     getPriceData();
     getDetailsData();
     getChartData();
+    getNews();
     $scope.stockNotes = notesService.getNotes($scope.ticker);
   });
+
+  $scope.openWindow = function(link) {
+  
+  };
 
   $scope.addNote = function(index, title, body) {
     $scope.note = {title: title, body: body, date: $scope.todayDate, ticker: $scope.ticker};
@@ -200,6 +208,15 @@ angular.module('sidemenu.controllers', [])
       $scope.stockNotes = notesService.getNotes($scope.ticker);
     });
   };
+
+  function getNews() {
+    var promise = newsService.getNews($scope.ticker);
+
+    promise.then(function(data) {
+      $scope.newsStories = data;
+      console.log($scope.newsStories);
+    });
+    }
 
   function getPriceData(){
     var promise = stockDataService.getPriceData($scope.ticker);

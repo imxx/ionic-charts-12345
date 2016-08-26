@@ -207,6 +207,31 @@ svg text{
     padding: 10px 5px 5px;
 }
 
+/* News card */
+
+#stock-news .icon {
+    color: #ccc;
+    font-size: 11pt;
+    right: 0;
+}
+
+#stock-news h2 {
+    font-weight: 400;
+    white-space: normal;
+}
+
+#stock-news p {
+    color: #222;
+    font-size: 9pt;
+    margin: 10px auto 0;
+    white-space: normal;
+}
+
+#stock-news .item-icon-right {
+    padding-right: 30px;
+}
+
+
 /* Helper classes */
 
 .display-flex {
