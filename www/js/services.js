@@ -252,4 +252,99 @@ angular.module("sidemenu.services", [])
     return {
         getNews: getNews
     };
+})
+
+.factory('fillMyStocksCacheService', function(CacheFactory) {
+
+    var myStocksCache;
+
+    if(!CacheFactory.get('myStocksCache')) {
+        myStocksCache = CacheFactory('myStocksCache', {
+          storageMode: 'localStorage'
+        });
+    }
+    else
+        myStocksCache = CacheFactory.get('myStocksCache');
+
+    function fillMyStocksCache() {
+
+        var myStocksArray = [
+            {ticker: "AAPL"},
+            {ticker: "GPRO"},
+            {ticker: "FB"},
+            {ticker: "NFLX"},
+            {ticker: "TSLA"},
+            {ticker: "BRK-A"},
+            {ticker: "INTC"},
+            {ticker: "MSFT"},
+            {ticker: "GE"},
+            {ticker: "BAC"},
+            {ticker: "C"},
+            {ticker: "T"}
+        ];
+
+        myStocksCache.put('myStocks', myStocksArray);
+    };
+
+    return {
+        fillMyStocksCache: fillMyStocksCache
+    };
+})
+
+.factory('myStocksCacheService', function(CacheFactory) {
+
+    var myStocksCache = CacheFactory.get('myStocksCache');
+
+    return myStocksCache;
+})
+
+.factory('myStocksArrayService', function(fillMyStocksCacheService, myStocksCacheService) {
+
+    if(!myStocksCacheService.info('myStocks')) {
+        fillMyStocksCacheService.fillMyStocksCache();
+    }
+
+    var myStocks = myStocksCacheService.get('myStocks');
+
+    return myStocks;
+})
+
+.factory('followStockService', function(myStocksArrayService, myStocksCacheService) {
+
+    function follow(ticker) {
+        var stockToAdd = {"ticker": ticker};
+        myStocksArrayService.push(stockToAdd);
+        myStocksCacheService.put('myStocks', myStocksArrayService);
+    }
+
+    function unfollow(ticker) {
+
+        for (var i = 0; i < myStocksArrayService.length; i++) {
+            if(myStocksArrayService[i].ticker == ticker) {
+
+                myStocksArrayService.splice(i, 1);
+                myStocksCacheService.remove('myStocks');
+                myStocksCacheService.put('myStocks', myStocksArrayService);
+                break;
+            }
+        }
+    }
+
+    function checkFollowing(ticker) {
+
+        for (var i = 0; i < myStocksArrayService.length; i++) {
+            if(myStocksArrayService[i].ticker == ticker) {
+              return true;
+            }
+        }
+
+        return false;
+    }
+
+    return {
+        follow: follow,
+        unfollow: unfollow,
+        checkFollowing: checkFollowing
+    }
+
 });
