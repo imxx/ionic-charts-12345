@@ -6,6 +6,7 @@
 // 'starter.controllers' is found in controllers.js
 angular.module('sidemenu', [
   'ionic',
+  'angular-cache',
   'nvd3',
   'nvChart',
   'sidemenu.controllers',
@@ -41,7 +42,7 @@ angular.module('sidemenu', [
   })
 
   .state('app.myStocks', {
-    url: '/app/my-stock',
+    url: '/my-stocks',
     views: {
       'menuContent': {
         templateUrl: 'templates/my-stocks.html',
