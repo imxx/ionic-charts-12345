@@ -11,10 +11,39 @@ angular.module('sidemenu.controllers', [])
 .controller('MyStocksCtrl', [
   "$scope",
   "myStocksArrayService",
+  "stockDataService",
+  "stockPriceCacheService",
   function($scope,
-    myStocksArrayService) {
+    myStocksArrayService,
+    stockDataService,
+    stockPriceCacheService) {
+
+    $scope.$on("$ionicView.afterEnter", function() {
+      $scope.getMyStocksData();
+    });
+
+    $scope.getMyStocksData = function() {
+
+      myStocksArrayService.forEach(function(stock) {
+
+        var promise = stockDataService.getPriceData(stock.ticker);
+
+        $scope.myStocksData = [];
+
+        promise.then(function(data) {
+          $scope.myStocksData.push(stockPriceCacheService.get(data.symbol));
+        });
+      });
+
+      $scope.$broadcast('scroll.refreshComplete');
+    };
+
+    $scope.unfollowStock = function(ticker) {
+      followStockService.unfollow(ticker);
+      $scope.getMyStocksData();
+    };
   
-  $scope.myStocksArray = myStocksArrayService;
+    $scope.myStocksArray = myStocksArrayService;
 
 }])
 
@@ -186,9 +215,8 @@ angular.module('sidemenu.controllers', [])
 
     promise.then(function(data) {
       $scope.newsStories = data;
-      console.log($scope.newsStories);
     });
-    }
+  }
 
   function getPriceData(){
     var promise = stockDataService.getPriceData($scope.ticker);
@@ -321,4 +349,27 @@ angular.module('sidemenu.controllers', [])
       modalService.closeModal();
       $state.go('app.stock', {stockTicker: ticker});
     };
+}])
+
+.controller('LoginSignupCtrl', ['$scope',
+  'modalService',
+  'userService',
+  function($scope,
+    modalService,
+    userService) {
+
+    $scope.user = {email: '', password: ''};
+
+    $scope.closeModal = function() {
+      modalService.closeModal();
+    };
+
+    $scope.signup = function(user) {
+
+    };
+
+    $scope.login = function(user) {
+
+    };
+
 }]);
