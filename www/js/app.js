@@ -5,8 +5,10 @@
 // the 2nd parameter is an array of 'requires'
 // 'starter.controllers' is found in controllers.js
 angular.module('sidemenu', [
+  'ngCordova',
   'ionic',
   'angular-cache',
+  'firebase',
   'nvd3',
   'nvChart',
   'cb.x2js',
@@ -27,7 +29,7 @@ angular.module('sidemenu', [
     }
     if (window.StatusBar) {
       // org.apache.cordova.statusbar required
-      StatusBar.styleDefault();
+      StatusBar.styleHex("#ffffff");
     }
   });
 })

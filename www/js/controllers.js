@@ -2,10 +2,17 @@ angular.module('sidemenu.controllers', [])
 
 .controller('AppCtrl', ["$scope",
   "modalService",
+  "userService",
   function($scope,
-    modalService) {
+    modalService,
+    userService) {
 
   $scope.modalService = modalService;
+
+  $scope.logout = function(){
+    userService.logout();
+  };
+
 }])
 
 .controller('MyStocksCtrl', [
@@ -52,6 +59,7 @@ angular.module('sidemenu.controllers', [])
   "$window",
   "$stateParams",
   '$ionicPopup',
+  '$cordovaInAppBrowser',
   "stockDataService",
   "chartDataService",
   "dateService",
@@ -62,6 +70,7 @@ angular.module('sidemenu.controllers', [])
     $window,
     $stateParams,
     $ionicPopup,
+    $cordovaInAppBrowser,
     stockDataService,
     chartDataService,
     dateService,
@@ -92,7 +101,13 @@ angular.module('sidemenu.controllers', [])
   });
 
   $scope.openWindow = function(link) {
-  
+    var inAppBrowserOptions = {
+      location: "yes",
+      clearcache: "yes",
+      toolbar: "yes"
+    };
+
+    $cordovaInAppBrowser.open(link, "_blank", inAppBrowserOptions);
   };
 
   $scope.addNote = function(index, title, body) {
@@ -334,7 +349,6 @@ angular.module('sidemenu.controllers', [])
 
     $scope.search = function() {
       $scope.searchResults = '';
-      console.log("HERE")
       startSearch($scope.searchQuery);
     };
 
@@ -365,11 +379,11 @@ angular.module('sidemenu.controllers', [])
     };
 
     $scope.signup = function(user) {
-
+      userService.signup(user);
     };
 
     $scope.login = function(user) {
-
+      userService.login(user);
     };
 
 }]);

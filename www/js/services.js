@@ -1,11 +1,29 @@
 angular.module("sidemenu.services", [])
 
+.constant('FIREBASE_URL', 'https://stock-market-test-app.firebaseio.com/')
+
 .factory("encodeURIService", function(){
     return {
         encode: function(string){
             return encodeURIComponent(string).replace(/\"/g, "%22").replace(/\ /g, "%20").replace(/[!'()]/g, escape);
         }
     }
+})
+
+.factory('firebaseRef', function($firebase, FIREBASE_URL) {
+
+    var firebaseRef = new Firebase(FIREBASE_URL);
+
+    return firebaseRef;
+})
+
+
+
+.factory('firebaseUserRef', function(firebaseRef) {
+
+    var userRef = firebaseRef.child('users');
+
+    return userRef;
 })
 
 .factory("dateService", function($filter){
@@ -216,7 +234,7 @@ angular.module("sidemenu.services", [])
     return notesCache;
 })
 
-.factory("notesService", function(notesCacheService){
+.factory("notesService", function(notesCacheService, userService){
 
     function getNotes(ticker){
         return notesCacheService.get(ticker);
@@ -232,12 +250,22 @@ angular.module("sidemenu.services", [])
         stockNotes.push(note);
 
         notesCacheService.put(ticker, stockNotes);
+
+        if(userService.getUser()){
+            var notes = notesCacheService.get(ticker);
+            userService.updateNotes(ticker, stockNotes);
+        }
     }
 
     function deleteNote(ticker, index){
         var stockNotes = notesCacheService.get(ticker);
         stockNotes.splice(index, 1);
         notesCacheService.put(ticker, stockNotes);
+
+        if(userService.getUser()){
+            var notes = notesCacheService.get(ticker);
+            userService.updateNotes(ticker, stockNotes);
+        }
     }
 
     return {
@@ -330,12 +358,16 @@ angular.module("sidemenu.services", [])
     return myStocks;
 })
 
-.factory('followStockService', function(myStocksArrayService, myStocksCacheService) {
+.factory('followStockService', function(myStocksArrayService, myStocksCacheService, userService) {
 
     function follow(ticker) {
         var stockToAdd = {"ticker": ticker};
         myStocksArrayService.push(stockToAdd);
         myStocksCacheService.put('myStocks', myStocksArrayService);
+
+        if(userService.getUser()){
+            userService.updateStocks(myStocksArrayService);
+        }
     }
 
     function unfollow(ticker) {
@@ -346,6 +378,11 @@ angular.module("sidemenu.services", [])
                 myStocksArrayService.splice(i, 1);
                 myStocksCacheService.remove('myStocks');
                 myStocksCacheService.put('myStocks', myStocksArrayService);
+                
+                if(userService.getUser()){
+                    userService.updateStocks(myStocksArrayService);
+                }
+
                 break;
             }
         }
@@ -435,4 +472,140 @@ angular.module("sidemenu.services", [])
     return {
         search: search
     }
+})
+
+.factory('userService', function($rootScope,
+    $window,
+    $timeout,
+    firebaseRef,
+    firebaseUserRef,
+    myStocksArrayService,
+    myStocksCacheService,
+    notesCacheService,
+    modalService) {
+
+    function login(user, signup) {
+
+        firebaseRef.authWithPassword({
+            email    : user.email,
+            password : user.password
+        }, function(error, authData) {
+            if (error) {
+                console.log("Login Failed!", error);
+            } else {
+                $rootScope.currentUser = authData;
+
+                if(signup) {
+                    modalService.closeModal();
+                }
+                else {
+                    myStocksCacheService.removeAll();
+                    notesCacheService.removeAll();
+
+                    loadUserData(authData);
+
+                    modalService.closeModal();
+
+                    $timeout(function() {
+                        $window.location.reload(true);
+                    }, 400);
+                }
+            }
+        });
+    }
+
+    function signup(user) {
+
+        firebaseRef.createUser({
+            email    : user.email,
+            password : user.password
+        }, function(error, userData) {
+            if (error) {
+                console.log("Error creating user:", error);
+            } else {
+                login(user, true);
+                firebaseRef.child('emails').push(user.email);
+                firebaseUserRef.child(userData.uid).child('stocks').set(myStocksArrayService);
+
+                var stocksWithNotes = notesCacheService.keys();
+
+                stocksWithNotes.forEach(function(stockWithNotes) {
+                    var notes = notesCacheService.get(stockWithNotes);
+
+                    notes.forEach(function(note) {
+                        firebaseUserRef.child(userData.uid).child('notes').child(note.ticker).push(note);
+                    });
+                });
+            }
+        });
+    }
+
+    function logout() {
+        firebaseRef.unauth();
+        notesCacheService.removeAll();
+        myStocksCacheService.removeAll();
+        $window.location.reload(true);
+        $rootScope.currentUser = '';
+    }
+
+    function updateStocks(stocks) {
+        firebaseUserRef.child(getUser().uid).child('stocks').set(stocks);
+    }
+
+    function updateNotes(ticker, notes) {
+        firebaseUserRef.child(getUser().uid).child('notes').child(ticker).remove();
+        notes.forEach(function(note) {
+            firebaseUserRef.child(getUser().uid).child('notes').child(note.ticker).push(note);
+        });
+    }
+
+    function loadUserData(authData) {
+
+        firebaseUserRef.child(authData.uid).child('stocks').once('value', function(snapshot) {
+            var stocksFromDatabase = [];
+
+            snapshot.val().forEach(function(stock) {
+                var stockToAdd = {ticker: stock.ticker};
+                stocksFromDatabase.push(stockToAdd);
+            });
+
+            myStocksCacheService.put('myStocks', stocksFromDatabase);
+        
+        }, function(error) {
+            console.log("Firebase error –> stocks" + error);
+        });
+
+        firebaseUserRef.child(authData.uid).child('notes').once('value', function(snapshot) {
+
+            snapshot.forEach(function(stocksWithNotes) {
+                var notesFromDatabase = [];
+
+                stocksWithNotes.forEach(function(note) {
+                    notesFromDatabase.push(note.val());
+                    var cacheKey = note.child('ticker').val();
+                    notesCacheService.put(cacheKey, notesFromDatabase);
+                });
+            });
+
+        }, function(error) {
+            console.log("Firebase error –> notes: " + error);
+        });
+    }
+
+    function getUser() {
+        return firebaseRef.getAuth();
+    };
+
+    if(getUser()) {
+        $rootScope.currentUser = getUser();
+    }
+
+    return {
+        login: login,
+        signup: signup,
+        logout: logout,
+        updateStocks: updateStocks,
+        updateNotes: updateNotes,
+        getUser: getUser
+    };
 });
